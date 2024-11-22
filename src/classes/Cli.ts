@@ -277,32 +277,41 @@ class Cli {
 
   // method to find a vehicle to tow
   // TODO: add a parameter to accept a truck object
-  findVehicleToTow(): void {
+  findVehicleToTow(truck: Truck): void {
     inquirer
       .prompt([
         {
           type: 'list',
           name: 'vehicleToTow',
           message: 'Select a vehicle to tow',
-          choices: this.vehicles.map((vehicle) => {
-            return {
-              name: `${vehicle.vin} -- ${vehicle.make} ${vehicle.model}`,
-              value: vehicle,
-            };
-          }),
-        },
-      ])
+          choices: this.vehicles
+          .filter(vehicle => vehicle.vin !== truck.vin) 
+          .map(vehicle => ({
+            name: `${vehicle.vin} -- ${vehicle.make} ${vehicle.model}`,
+            value: vehicle.vin, 
+          })),
+      },
+    ])
       .then((answers) => {
         // TODO: check if the selected vehicle is the truck
-        if(Truck)
         // TODO: if it is, log that the truck cannot tow itself then perform actions on the truck to allow the user to select another action
-      {
-        console.log(`Truck cannot tow itself`)
-      } else 
-        // TODO: if it is not, tow the selected vehicle then perform actions on the truck to allow the user to select another action
-       {
+        const selectedVehicle = this.vehicles.find(vehicle => vehicle.vin === answers.vehicleToTow);
 
-       }
+        if (selectedVehicle === truck) { console.log('Truck cannot tow itself.');
+
+          this.selectedVehicleVin = truck.vin;
+          this.performActions();
+        // TODO: if it is not, tow the selected vehicle then perform actions on the truck to allow the user to select another action
+      } else if (selectedVehicle) {
+        console.log(`${truck.make} ${truck.model} is now towing ${selectedVehicle.make} ${selectedVehicle.model}.`);
+        truck.tow(selectedVehicle);
+        this.selectedVehicleVin = truck.vin;
+        this.performActions();
+      } else {
+        console.log('Invalid selection. Returning to actions.');
+        this.selectedVehicleVin = truck.vin;
+        this.performActions();
+      }
       });
   }
 
@@ -389,12 +398,35 @@ class Cli {
               this.vehicles[i].reverse();
             }
           }
-        } else if (answers.action === 'Tow') {
         // TODO: add statements to perform the tow action only if the selected vehicle is a truck. Call the findVehicleToTow method to find a vehicle to tow and pass the selected truck as an argument. After calling the findVehicleToTow method, you will need to return to avoid instantly calling the performActions method again since findVehicleToTow is asynchronous.
-        
+      } else if (answers.action === 'Tow') {
+        for (let i = 0; i < this.vehicles.length; i++) {
+          if (this.vehicles[i].vin === this.selectedVehicleVin) {
+            const selectedVehicle = this.vehicles[i];
+            if (selectedVehicle instanceof Truck) {
+              console.log('Preparing to tow another vehicle...');
+              this.findVehicleToTow(selectedVehicle);
+              return;
+            } else {
+              console.log('Only trucks can tow vehicles.');
+            }
+          }
+        }
         } else if (answers.action === 'Wheelie'){
         // TODO: add statements to perform the wheelie action only if the selected vehicle is a motorbike
-
+        for (let i = 0; i < this.vehicles.length; i++) {
+          if (this.vehicles[i].vin === this.selectedVehicleVin) {
+            const selectedVehicle = this.vehicles[i];
+      
+            // Check if the selected vehicle is a motorbike
+            if (selectedVehicle instanceof Motorbike) {
+              console.log('Performing a wheelie!');
+              selectedVehicle.wheelie();
+            } else {
+              console.log('Only motorbikes can perform a wheelie.');
+            }
+          }
+        }
         }
         else if (answers.action === 'Select or create another vehicle') {
           // start the cli to return to the initial prompt if the user wants to select or create another vehicle
